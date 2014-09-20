@@ -1,0 +1,83 @@
+---
+title: "Regression Models Course Project"
+author: "Milan Gerza"
+date: "Thursday, September 18, 2014"
+output: pdf_document
+---
+## Synopsis
+Many readers of our automobile industry magazine, the *"Motor Trends"*, are more and more interested in efficiency of fuel consumption. This study explores the relationship between type of transmission (automatic or manual), and MPG (miles per gallon) of a car.
+
+Two main questions will be answered here: 
+
+1. *“Is an automatic or manual transmission better for MPG?”*
+2. *"Quantify the MPG difference between automatic and manual transmissions"*
+
+## Data analysis
+### Data preparation
+The dataset is available by name **mtcars**. The format of the data is a data frame with 32 observations on 11 variables. The variables of intersets are *mpg* for miles per US gallon and *am* for transmission (0 = automatic, 1 = manual).
+
+```{r echo=F}
+require(datasets)
+data(mtcars)
+head(mtcars)
+mtcars$amf[mtcars$am==0]<-"Automatic"
+mtcars$amf[mtcars$am==1]<-"Manual"
+```
+
+
+### Data exploration and interpretation
+The quick data analysis shows (see Fig. 1 in Appendix) that there is a clear difference between the automobiles having automatic vs manual transmission. The mean and standard deviation of MPG vs transmission type summarizes following table:
+```{r echo=F}
+transmission<-c("Manual","Automatic")
+mpgMean<-c(mean(mtcars[mtcars$am==1,1]),mean(mtcars[mtcars$am==0,1]))
+mpgSd<-c(sd(mtcars[mtcars$am==1,1]),sd(mtcars[mtcars$am==0,1]))
+sumCars<-data.frame(rbind(mpgMean,mpgSd))
+names(sumCars)<-c("Manual","Automatic")
+sumCars
+
+```
+
+### Hypotesis testing
+Let us efine $H_0$ as "The difference in means of MPG in automatic vs manual transmission type is equal to 0.". Alternative hypothesis $H_a$ statest that "True difference in means is greater than 0". The dataset is small and we cannot argue about strict normality of the data, therefore we test using two sample t-test under 0.95 confidence level (ie. ${\alpha}$=0.05). Since the p-value is less than ${\alpha}$ we would reject $H_0$ in favor of $H_a$. 
+Details of the t-test:
+```{r echo=F}
+x1<-mtcars[mtcars$am==1,1]
+x2<-mtcars[mtcars$am==0,1]
+t.test(x1,x2,alternative = "greater")
+```
+
+### Fitting models, diagnostics and interpretation
+Both linear and anova models were fitted into the data. 
+The results do not show any significant difference in the model we select, so a linear model was selected. The intercept and predictor values are:
+```{r echo=F}
+lm(mpg~am,data=mtcars)$coefficients
+```
+
+Summary of the linear model:
+```{r echo=F}
+fitLm<-lm(mpg~am,data=mtcars)
+summary(fitLm)
+```
+The coefficients can be interpreted in a way that change from automatic to manual transmission increases MPG of a car by `r as.numeric(lm(mpg~am,data=mtcars)$coefficients[2])` , with signif. level 0.999.
+As the plot of residual shows (see Fig.2 of Appendix), there is pattern in the variance, showing clear case of heteroscedasticity. This leads to a conclusion that although we fit the linear model, the coefficients will be slightly inaccurate.
+
+## Summary
+The analysis shows a probable dependency of MPG on transmission type which we were able to quantify it using linear model.
+We can therefore answer questions of interest following way: On a significance level 0.95 we have confirmed that manual transmission is better for MPG. The linear model evaluates the difference between automatic and manual transmission is `r as.numeric(lm(mpg~am,data=mtcars)$coefficients[2])` MPG in favor of manual transmission type. However, the real difference may be slightly different due to the unequal variance in groups of observed values.
+
+
+# Appendix
+```{r,echo=F}
+library(ggplot2)
+qplot(amf,mpg,data=mtcars,main="Fig. 1, MPG vs Transmission",xlab="Transmission type"
+      ,ylab="Miles per US Gallon")
+
+```
+
+```{r, echo=F}
+library(ggplot2)
+fitRes<-residuals(fitLm)
+p<-qplot(mtcars$amf, resid(fitLm), ylab="Residuals", 
+    xlab="Transmission type", main="Fig. 2, Residual plot")
+p + geom_hline(aes(yintercept=0))
+```
